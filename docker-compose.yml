@@ -2,40 +2,57 @@ version: "3.7"
 services:
   web:
     build:
-      context: ./api
       dockerfile: Dockerfile
+      target: api
+    command: 'make run-dev-api'
+    environment:
+      FLASK_DEBUG: "on"
+      CELERY_BROKER_URL: amqp://rmuser:rmpassword@rabbitmq:5672
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
     restart: always
     ports:
      - "5001:5001"
     depends_on:
+      - rabbitmq
       - redis
-    volumes: ['./api:/api']
+    volumes: ['./api:/code/api']
   worker:
     build:
-      context: ./celery-queue
       dockerfile: Dockerfile
-    command: celery -A tasks worker -l info -E
+      target: worker
+    command: celery -A celery_queue.tasks worker -l info -E
     environment:
-      CELERY_BROKER_URL: redis://redis
-      CELERY_RESULT_BACKEND: redis://redis
-    depends_on:
-      - redis
-    volumes: ['./celery-queue:/queue']
-  monitor:
-    build:
-      context: ./celery-queue
-      dockerfile: Dockerfile
-    ports:
-     - "5555:5555"
-    command:  ['celery', 'flower', '-A', 'tasks']
-    environment:
-      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: amqp://rmuser:rmpassword@rabbitmq:5672
       CELERY_RESULT_BACKEND: redis://redis:6379/0
     depends_on:
+      - rabbitmq
+      - redis
+    volumes: ['./celery_queue:/code/celery_queue']
+  monitor:
+    build:
+      dockerfile: Dockerfile
+      target: worker
+    ports:
+     - "5555:5555"
+    command:  ['celery', 'flower', '-A', './celery_queue/tasks']
+    environment:
+      CELERY_BROKER_URL: amqp://rmuser:rmpassword@rabbitmq:5672
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    depends_on:
+      - rabbitmq
       - redis
       - worker
-    volumes: ['./celery-queue:/queue']
+    volumes: ['./celery_queue:/code/celery_queue']
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    environment:
+      - RABBITMQ_DEFAULT_USER=rmuser
+      - RABBITMQ_DEFAULT_PASS=rmpassword
+    ports:
+      - "15672:15672"
+      - "5672:5672"
   redis:
     image: redis:alpine
     ports:
       - "6379:6379"
+

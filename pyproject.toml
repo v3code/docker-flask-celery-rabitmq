@@ -1,0 +1,30 @@
+[tool.poetry]
+name = "docker-flask-celery-rabitmq"
+version = "0.1.0"
+description = ""
+authors = ["v3code <vitalik.w555@gmail.com>"]
+readme = "README.md"
+packages = [{include = "api"}, {include = "celery_queue"}]
+
+
+[tool.poetry.dependencies]
+python = "^3.8"
+celery = "^5.3.6"
+amqp = "^5.2.0"
+redis = "^5.0.1"
+
+
+[tool.poetry.group.api.dependencies]
+flask = "^3.0.0"
+
+
+[tool.poetry.group.worker.dependencies]
+flower = "^2.0.1"
+watchdog = "^3.0.0"
+
+[tool.poetry.scripts]
+api_dev = "api.app:run_server"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

@@ -1,7 +1,9 @@
+import os
+
 import celery.states as states
 from flask import Flask, Response
 from flask import url_for, jsonify
-from worker import celery
+from api.worker import celery
 
 dev_mode = True
 app = Flask(__name__)
@@ -28,5 +30,11 @@ def health_check() -> Response:
     return jsonify("OK")
 
 
+def run_server():
+    port = os.environ.get('PORT', 5001)
+    host = os.environ.get('HOST', '0.0.0.0')
+    app.run(host=host, port=port)
+
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001)
+    run_server()
